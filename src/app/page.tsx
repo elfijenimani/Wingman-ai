@@ -59,7 +59,7 @@ export default function HomePage() {
             AI Airport Assistant
           </h1>
           <p className="mt-3 text-slate-600">
-            Ask about check-in, baggage, documents, terminal timing, or airport steps.
+            Ask about check-in, baggage, documents, terminal timing, airport steps, or travel preparation.
           </p>
         </div>
 
