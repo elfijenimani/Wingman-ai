@@ -11,33 +11,58 @@ export default function AddNote({
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   async function handleAdd(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setLoading(true);
+    setError('');
+    setSuccess('');
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    const { error } = await supabase.from('notes').insert([
-      {
-        title,
-        content,
-        user_id: user?.id,
-      },
-    ]);
-
-    setLoading(false);
-
-    if (error) {
-      alert(error.message);
+    if (!title.trim()) {
+      setError('Title is required.');
       return;
     }
 
-    setTitle('');
-    setContent('');
-    onNoteAdded();
+    if (!content.trim()) {
+      setError('Content is required.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setError('Your session has expired. Please log in again.');
+        return;
+      }
+
+      const { error } = await supabase.from('notes').insert([
+        {
+          title: title.trim(),
+          content: content.trim(),
+          user_id: user.id,
+        },
+      ]);
+
+      if (error) {
+        setError(error.message || 'Failed to add note.');
+        return;
+      }
+
+      setTitle('');
+      setContent('');
+      setSuccess('Note added successfully.');
+      onNoteAdded();
+    } catch (err) {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -57,6 +82,14 @@ export default function AddNote({
         onChange={(e) => setContent(e.target.value)}
         style={{ minHeight: '100px', resize: 'vertical' }}
       />
+
+      {error && (
+        <p style={{ color: 'red', marginBottom: '10px' }}>{error}</p>
+      )}
+
+      {success && (
+        <p style={{ color: 'green', marginBottom: '10px' }}>{success}</p>
+      )}
 
       <button className="button" type="submit" disabled={loading}>
         {loading ? 'Adding...' : 'Add Note'}

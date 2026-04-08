@@ -87,7 +87,7 @@ export default function DashboardPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setAiError(data.error || 'Something went wrong.');
+        setAiError(data.error || 'Something went wrong. Please try again.');
         return;
       }
 
