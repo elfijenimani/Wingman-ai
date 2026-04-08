@@ -25,6 +25,13 @@ type ChecklistItem = {
   done: boolean;
 };
 
+type TripPlan = {
+  id: number;
+  destination: string;
+  departureDate: string;
+  reminder: string;
+};
+
 const quickPrompts = [
   'What should I do before my flight?',
   'What documents should I check before traveling?',
@@ -63,6 +70,11 @@ export default function DashboardPage() {
 
   const [checklist, setChecklist] = useState<ChecklistItem[]>(defaultChecklist);
 
+  const [tripDestination, setTripDestination] = useState('');
+  const [tripDate, setTripDate] = useState('');
+  const [tripReminder, setTripReminder] = useState('');
+  const [tripPlans, setTripPlans] = useState<TripPlan[]>([]);
+
   useEffect(() => {
     fetchNotes();
   }, []);
@@ -70,14 +82,11 @@ export default function DashboardPage() {
   useEffect(() => {
     const savedChecklist = localStorage.getItem('wingman_checklist');
     const savedChat = localStorage.getItem('wingman_chat_history');
+    const savedTrips = localStorage.getItem('wingman_trip_plans');
 
-    if (savedChecklist) {
-      setChecklist(JSON.parse(savedChecklist));
-    }
-
-    if (savedChat) {
-      setChatHistory(JSON.parse(savedChat));
-    }
+    if (savedChecklist) setChecklist(JSON.parse(savedChecklist));
+    if (savedChat) setChatHistory(JSON.parse(savedChat));
+    if (savedTrips) setTripPlans(JSON.parse(savedTrips));
   }, []);
 
   useEffect(() => {
@@ -87,6 +96,10 @@ export default function DashboardPage() {
   useEffect(() => {
     localStorage.setItem('wingman_chat_history', JSON.stringify(chatHistory));
   }, [chatHistory]);
+
+  useEffect(() => {
+    localStorage.setItem('wingman_trip_plans', JSON.stringify(tripPlans));
+  }, [tripPlans]);
 
   const completedChecklist = useMemo(
     () => checklist.filter((item) => item.done).length,
@@ -121,10 +134,7 @@ export default function DashboardPage() {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (!error) {
-      setNotes(data || []);
-    }
-
+    if (!error) setNotes(data || []);
     setLoadingNotes(false);
   }
 
@@ -221,9 +231,7 @@ export default function DashboardPage() {
 
     const { error } = await supabase.from('notes').delete().eq('id', noteId);
 
-    if (!error) {
-      fetchNotes();
-    }
+    if (!error) fetchNotes();
   }
 
   async function sendAIRequest(prompt: string) {
@@ -273,6 +281,33 @@ export default function DashboardPage() {
     await sendAIRequest(question);
   }
 
+  async function saveAiAnswerAsNote() {
+    if (!answer.trim()) return;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    const { error } = await supabase.from('notes').insert([
+      {
+        title: 'Saved AI Answer',
+        content: answer,
+        user_id: user.id,
+      },
+    ]);
+
+    if (!error) {
+      fetchNotes();
+      setNoteSuccess('AI answer saved as note.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
   function toggleChecklist(id: number) {
     setChecklist((prev) =>
       prev.map((item) =>
@@ -284,6 +319,30 @@ export default function DashboardPage() {
   function clearChatHistory() {
     setChatHistory([]);
     localStorage.removeItem('wingman_chat_history');
+  }
+
+  function handleAddTrip(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    if (!tripDestination.trim() || !tripDate.trim() || !tripReminder.trim()) {
+      return;
+    }
+
+    const newTrip: TripPlan = {
+      id: Date.now(),
+      destination: tripDestination.trim(),
+      departureDate: tripDate,
+      reminder: tripReminder.trim(),
+    };
+
+    setTripPlans((prev) => [newTrip, ...prev]);
+    setTripDestination('');
+    setTripDate('');
+    setTripReminder('');
+  }
+
+  function handleDeleteTrip(id: number) {
+    setTripPlans((prev) => prev.filter((trip) => trip.id !== id));
   }
 
   async function handleLogout() {
@@ -338,10 +397,8 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="stat-card">
-                  <p className="stat-label">Checklist Done</p>
-                  <h3 className="stat-value">
-                    {completedChecklist}/{checklist.length}
-                  </h3>
+                  <p className="stat-label">Trips Planned</p>
+                  <h3 className="stat-value">{tripPlans.length}</h3>
                 </div>
               </div>
 
@@ -349,68 +406,33 @@ export default function DashboardPage() {
                 <div className="sidebar">
                   <h3 className="sidebar-title">Navigation</h3>
                   <div className="sidebar-nav">
-                    <a className="sidebar-link" href="#create-note">
-                      <div className="icon-row"><span className="icon">✍️</span><span>Create Note</span></div>
-                    </a>
-                    <a className="sidebar-link" href="#my-notes">
-                      <div className="icon-row"><span className="icon">📝</span><span>My Notes</span></div>
-                    </a>
-                    <a className="sidebar-link" href="#quick-actions">
-                      <div className="icon-row"><span className="icon">⚡</span><span>Quick Actions</span></div>
-                    </a>
-                    <a className="sidebar-link" href="#ask-ai">
-                      <div className="icon-row"><span className="icon">🤖</span><span>Ask AI</span></div>
-                    </a>
-                    <a className="sidebar-link" href="#chat-history">
-                      <div className="icon-row"><span className="icon">💬</span><span>Chat History</span></div>
-                    </a>
-                    <a className="sidebar-link" href="#checklist">
-                      <div className="icon-row"><span className="icon">✅</span><span>Checklist</span></div>
-                    </a>
+                    <a className="sidebar-link" href="#create-note"><div className="icon-row"><span className="icon">✍️</span><span>Create Note</span></div></a>
+                    <a className="sidebar-link" href="#my-notes"><div className="icon-row"><span className="icon">📝</span><span>My Notes</span></div></a>
+                    <a className="sidebar-link" href="#trip-planner"><div className="icon-row"><span className="icon">🧳</span><span>Trip Planner</span></div></a>
+                    <a className="sidebar-link" href="#quick-actions"><div className="icon-row"><span className="icon">⚡</span><span>Quick Actions</span></div></a>
+                    <a className="sidebar-link" href="#ask-ai"><div className="icon-row"><span className="icon">🤖</span><span>Ask AI</span></div></a>
+                    <a className="sidebar-link" href="#chat-history"><div className="icon-row"><span className="icon">💬</span><span>Chat History</span></div></a>
+                    <a className="sidebar-link" href="#checklist"><div className="icon-row"><span className="icon">✅</span><span>Checklist</span></div></a>
                   </div>
                 </div>
 
                 <div className="main-content">
                   <div id="create-note" className="panel section-anchor">
-                    <h2 className="panel-title">
-                      {editingId ? 'Edit Note' : 'Create Note'}
-                    </h2>
+                    <h2 className="panel-title">{editingId ? 'Edit Note' : 'Create Note'}</h2>
 
                     <form className="form-stack" onSubmit={handleSaveNote}>
-                      <input
-                        className="input"
-                        type="text"
-                        placeholder="Note title"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                      />
-
-                      <textarea
-                        className="textarea"
-                        placeholder="Write a note..."
-                        value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                      />
+                      <input className="input" type="text" placeholder="Note title" value={title} onChange={(e) => setTitle(e.target.value)} />
+                      <textarea className="textarea" placeholder="Write a note..." value={content} onChange={(e) => setContent(e.target.value)} />
 
                       {noteError && <p className="message-error">{noteError}</p>}
                       {noteSuccess && <p className="message-success">{noteSuccess}</p>}
 
                       <button className="btn btn-primary btn-full" type="submit" disabled={noteLoading}>
-                        {noteLoading
-                          ? editingId
-                            ? 'Saving...'
-                            : 'Adding...'
-                          : editingId
-                          ? 'Save Changes'
-                          : 'Add Note'}
+                        {noteLoading ? (editingId ? 'Saving...' : 'Adding...') : editingId ? 'Save Changes' : 'Add Note'}
                       </button>
 
                       {editingId && (
-                        <button
-                          type="button"
-                          className="btn btn-danger btn-full"
-                          onClick={handleCancelEdit}
-                        >
+                        <button type="button" className="btn btn-danger btn-full" onClick={handleCancelEdit}>
                           Cancel Edit
                         </button>
                       )}
@@ -434,9 +456,7 @@ export default function DashboardPage() {
                         <p className="empty-text">Loading notes...</p>
                       ) : filteredNotes.length === 0 ? (
                         <p className="empty-text">
-                          {notes.length === 0
-                            ? 'No notes yet for this user.'
-                            : 'No notes match your search.'}
+                          {notes.length === 0 ? 'No notes yet for this user.' : 'No notes match your search.'}
                         </p>
                       ) : (
                         filteredNotes.map((note, index) => (
@@ -451,20 +471,66 @@ export default function DashboardPage() {
                             <p className="note-text">{note.content}</p>
 
                             <div className="edit-actions">
-                              <button
-                                className="small-btn secondary"
-                                onClick={() => handleEditNote(note)}
-                              >
+                              <button className="small-btn secondary" onClick={() => handleEditNote(note)}>
                                 Edit
                               </button>
-                              <button
-                                className="small-btn"
-                                onClick={() => handleDeleteNote(note.id)}
-                              >
+                              <button className="small-btn" onClick={() => handleDeleteNote(note.id)}>
                                 Delete
                               </button>
                             </div>
                           </motion.div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  <div id="trip-planner" className="panel section-anchor">
+                    <h2 className="panel-title">Trip Planner</h2>
+
+                    <form className="form-stack" onSubmit={handleAddTrip}>
+                      <input
+                        className="input"
+                        type="text"
+                        placeholder="Destination"
+                        value={tripDestination}
+                        onChange={(e) => setTripDestination(e.target.value)}
+                      />
+
+                      <input
+                        className="input"
+                        type="date"
+                        value={tripDate}
+                        onChange={(e) => setTripDate(e.target.value)}
+                      />
+
+                      <textarea
+                        className="textarea"
+                        placeholder="Packing reminder / travel note..."
+                        value={tripReminder}
+                        onChange={(e) => setTripReminder(e.target.value)}
+                      />
+
+                      <button className="btn btn-success btn-full" type="submit">
+                        Save Trip Plan
+                      </button>
+                    </form>
+
+                    <div className="trip-grid">
+                      {tripPlans.length === 0 ? (
+                        <p className="empty-text">No trip plans yet.</p>
+                      ) : (
+                        tripPlans.map((trip) => (
+                          <div className="trip-card" key={trip.id}>
+                            <h3 className="trip-title">{trip.destination}</h3>
+                            <p className="trip-text">{trip.reminder}</p>
+                            <p className="trip-meta">Departure: {trip.departureDate}</p>
+
+                            <div className="note-actions">
+                              <button className="small-btn" onClick={() => handleDeleteTrip(trip.id)}>
+                                Delete
+                              </button>
+                            </div>
+                          </div>
                         ))
                       )}
                     </div>
@@ -524,6 +590,20 @@ export default function DashboardPage() {
                       >
                         <h3 className="answer-title">Latest AI Answer</h3>
                         <p className="answer-text">{answer}</p>
+
+                        <div className="two-btns" style={{ marginTop: '14px' }}>
+                          <button className="btn btn-success" onClick={saveAiAnswerAsNote}>
+                            Save AI Answer
+                          </button>
+                          <button
+                            className="btn btn-primary"
+                            onClick={() => {
+                              navigator.clipboard.writeText(answer);
+                            }}
+                          >
+                            Copy Answer
+                          </button>
+                        </div>
                       </motion.div>
                     ) : (
                       <div className="answer-box" style={{ marginTop: '14px' }}>
