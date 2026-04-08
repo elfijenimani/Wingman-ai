@@ -1,36 +1,33 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Wingman AI
 
-## Getting Started
+Wingman AI është një aplikacion web i ndërtuar me Next.js dhe Supabase që u lejon përdoruesve të krijojnë dhe menaxhojnë notes personale si dhe të përdorin një AI assistant për pyetje.
 
-First, run the development server:
+## Teknologjitë e përdorura
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+* Next.js
+* Supabase (Authentication dhe Database)
+* Vercel (Deployment)
+* Groq API (AI)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Funksionalitetet
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+* Regjistrim dhe login i përdoruesve
+* Shtimi i notes (Create)
+* Shfaqja e notes (Read)
+* Filtrim i të dhënave sipas përdoruesit
+* Siguri me Row Level Security (RLS)
+* AI assistant për pyetje dhe përgjigje
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Siguria
 
-## Learn More
+Aplikacioni përdor Row Level Security (RLS) në Supabase, që siguron që çdo përdorues mund të shohë vetëm të dhënat e veta dhe jo të përdoruesve të tjerë.
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Aplikacioni është deploy-uar në Vercel dhe mund të aksesohet këtu:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+https://wingman-ai-git-main-elfijenimanis-projects.vercel.app/
 
-## Deploy on Vercel
+## Përfundim
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Ky projekt demonstron një aplikacion full-stack modern me authentication, database dhe AI integration.
