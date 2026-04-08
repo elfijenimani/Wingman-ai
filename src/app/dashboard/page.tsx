@@ -46,6 +46,7 @@ export default function DashboardPage() {
 
   const [notes, setNotes] = useState<Note[]>([]);
   const [loadingNotes, setLoadingNotes] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -70,8 +71,13 @@ export default function DashboardPage() {
     const savedChecklist = localStorage.getItem('wingman_checklist');
     const savedChat = localStorage.getItem('wingman_chat_history');
 
-    if (savedChecklist) setChecklist(JSON.parse(savedChecklist));
-    if (savedChat) setChatHistory(JSON.parse(savedChat));
+    if (savedChecklist) {
+      setChecklist(JSON.parse(savedChecklist));
+    }
+
+    if (savedChat) {
+      setChatHistory(JSON.parse(savedChat));
+    }
   }, []);
 
   useEffect(() => {
@@ -86,6 +92,16 @@ export default function DashboardPage() {
     () => checklist.filter((item) => item.done).length,
     [checklist]
   );
+
+  const filteredNotes = useMemo(() => {
+    return notes.filter((note) => {
+      const term = searchTerm.toLowerCase();
+      return (
+        note.title.toLowerCase().includes(term) ||
+        note.content.toLowerCase().includes(term)
+      );
+    });
+  }, [notes, searchTerm]);
 
   async function fetchNotes() {
     setLoadingNotes(true);
@@ -265,6 +281,11 @@ export default function DashboardPage() {
     );
   }
 
+  function clearChatHistory() {
+    setChatHistory([]);
+    localStorage.removeItem('wingman_chat_history');
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut();
     router.push('/login');
@@ -399,13 +420,26 @@ export default function DashboardPage() {
                   <div id="my-notes" className="panel section-anchor">
                     <h2 className="panel-title">My Notes</h2>
 
+                    <input
+                      className="input"
+                      type="text"
+                      placeholder="Search notes..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      style={{ marginTop: '6px' }}
+                    />
+
                     <div className="notes-list">
                       {loadingNotes ? (
                         <p className="empty-text">Loading notes...</p>
-                      ) : notes.length === 0 ? (
-                        <p className="empty-text">No notes yet for this user.</p>
+                      ) : filteredNotes.length === 0 ? (
+                        <p className="empty-text">
+                          {notes.length === 0
+                            ? 'No notes yet for this user.'
+                            : 'No notes match your search.'}
+                        </p>
                       ) : (
-                        notes.map((note, index) => (
+                        filteredNotes.map((note, index) => (
                           <motion.div
                             key={note.id}
                             className="note-card"
@@ -502,10 +536,30 @@ export default function DashboardPage() {
                   </div>
 
                   <div id="chat-history" className="panel section-anchor">
-                    <h2 className="panel-title">AI Chat History</h2>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        gap: '12px',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <h2 className="panel-title" style={{ marginBottom: 0 }}>
+                        AI Chat History
+                      </h2>
+
+                      {chatHistory.length > 0 && (
+                        <button className="small-btn" onClick={clearChatHistory}>
+                          Clear History
+                        </button>
+                      )}
+                    </div>
 
                     {chatHistory.length === 0 ? (
-                      <p className="empty-text">No AI history yet.</p>
+                      <p className="empty-text" style={{ marginTop: '14px' }}>
+                        No AI history yet.
+                      </p>
                     ) : (
                       <div className="chat-history">
                         {chatHistory.map((item, index) => (
