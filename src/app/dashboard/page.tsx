@@ -52,6 +52,7 @@ export default function DashboardPage() {
   const [noteLoading, setNoteLoading] = useState(false);
   const [noteError, setNoteError] = useState('');
   const [noteSuccess, setNoteSuccess] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
@@ -69,13 +70,8 @@ export default function DashboardPage() {
     const savedChecklist = localStorage.getItem('wingman_checklist');
     const savedChat = localStorage.getItem('wingman_chat_history');
 
-    if (savedChecklist) {
-      setChecklist(JSON.parse(savedChecklist));
-    }
-
-    if (savedChat) {
-      setChatHistory(JSON.parse(savedChat));
-    }
+    if (savedChecklist) setChecklist(JSON.parse(savedChecklist));
+    if (savedChat) setChatHistory(JSON.parse(savedChat));
   }, []);
 
   useEffect(() => {
@@ -116,7 +112,7 @@ export default function DashboardPage() {
     setLoadingNotes(false);
   }
 
-  async function handleAddNote(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSaveNote(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setNoteError('');
     setNoteSuccess('');
@@ -144,28 +140,63 @@ export default function DashboardPage() {
         return;
       }
 
-      const { error } = await supabase.from('notes').insert([
-        {
-          title: title.trim(),
-          content: content.trim(),
-          user_id: user.id,
-        },
-      ]);
+      if (editingId) {
+        const { error } = await supabase
+          .from('notes')
+          .update({
+            title: title.trim(),
+            content: content.trim(),
+          })
+          .eq('id', editingId)
+          .eq('user_id', user.id);
 
-      if (error) {
-        setNoteError(error.message || 'Failed to add note.');
-        return;
+        if (error) {
+          setNoteError(error.message || 'Failed to update note.');
+          return;
+        }
+
+        setNoteSuccess('Note updated successfully.');
+      } else {
+        const { error } = await supabase.from('notes').insert([
+          {
+            title: title.trim(),
+            content: content.trim(),
+            user_id: user.id,
+          },
+        ]);
+
+        if (error) {
+          setNoteError(error.message || 'Failed to add note.');
+          return;
+        }
+
+        setNoteSuccess('Note added successfully.');
       }
 
       setTitle('');
       setContent('');
-      setNoteSuccess('Note added successfully.');
+      setEditingId(null);
       fetchNotes();
     } catch {
       setNoteError('Something went wrong. Please try again.');
     } finally {
       setNoteLoading(false);
     }
+  }
+
+  function handleEditNote(note: Note) {
+    setEditingId(note.id);
+    setTitle(note.title);
+    setContent(note.content);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function handleCancelEdit() {
+    setEditingId(null);
+    setTitle('');
+    setContent('');
+    setNoteError('');
+    setNoteSuccess('');
   }
 
   async function handleDeleteNote(noteId: string) {
@@ -297,20 +328,34 @@ export default function DashboardPage() {
                 <div className="sidebar">
                   <h3 className="sidebar-title">Navigation</h3>
                   <div className="sidebar-nav">
-                    <a className="sidebar-link" href="#create-note">Create Note</a>
-                    <a className="sidebar-link" href="#my-notes">My Notes</a>
-                    <a className="sidebar-link" href="#quick-actions">Quick Actions</a>
-                    <a className="sidebar-link" href="#ask-ai">Ask AI</a>
-                    <a className="sidebar-link" href="#chat-history">Chat History</a>
-                    <a className="sidebar-link" href="#checklist">Checklist</a>
+                    <a className="sidebar-link" href="#create-note">
+                      <div className="icon-row"><span className="icon">✍️</span><span>Create Note</span></div>
+                    </a>
+                    <a className="sidebar-link" href="#my-notes">
+                      <div className="icon-row"><span className="icon">📝</span><span>My Notes</span></div>
+                    </a>
+                    <a className="sidebar-link" href="#quick-actions">
+                      <div className="icon-row"><span className="icon">⚡</span><span>Quick Actions</span></div>
+                    </a>
+                    <a className="sidebar-link" href="#ask-ai">
+                      <div className="icon-row"><span className="icon">🤖</span><span>Ask AI</span></div>
+                    </a>
+                    <a className="sidebar-link" href="#chat-history">
+                      <div className="icon-row"><span className="icon">💬</span><span>Chat History</span></div>
+                    </a>
+                    <a className="sidebar-link" href="#checklist">
+                      <div className="icon-row"><span className="icon">✅</span><span>Checklist</span></div>
+                    </a>
                   </div>
                 </div>
 
                 <div className="main-content">
                   <div id="create-note" className="panel section-anchor">
-                    <h2 className="panel-title">Create Note</h2>
+                    <h2 className="panel-title">
+                      {editingId ? 'Edit Note' : 'Create Note'}
+                    </h2>
 
-                    <form className="form-stack" onSubmit={handleAddNote}>
+                    <form className="form-stack" onSubmit={handleSaveNote}>
                       <input
                         className="input"
                         type="text"
@@ -330,8 +375,24 @@ export default function DashboardPage() {
                       {noteSuccess && <p className="message-success">{noteSuccess}</p>}
 
                       <button className="btn btn-primary btn-full" type="submit" disabled={noteLoading}>
-                        {noteLoading ? 'Adding...' : 'Add Note'}
+                        {noteLoading
+                          ? editingId
+                            ? 'Saving...'
+                            : 'Adding...'
+                          : editingId
+                          ? 'Save Changes'
+                          : 'Add Note'}
                       </button>
+
+                      {editingId && (
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-full"
+                          onClick={handleCancelEdit}
+                        >
+                          Cancel Edit
+                        </button>
+                      )}
                     </form>
                   </div>
 
@@ -355,7 +416,13 @@ export default function DashboardPage() {
                             <h3 className="note-title">{note.title}</h3>
                             <p className="note-text">{note.content}</p>
 
-                            <div className="note-actions">
+                            <div className="edit-actions">
+                              <button
+                                className="small-btn secondary"
+                                onClick={() => handleEditNote(note)}
+                              >
+                                Edit
+                              </button>
                               <button
                                 className="small-btn"
                                 onClick={() => handleDeleteNote(note.id)}
@@ -403,6 +470,14 @@ export default function DashboardPage() {
                         {aiLoading ? 'Thinking...' : 'Ask AI'}
                       </button>
                     </form>
+
+                    {aiLoading && (
+                      <div className="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+                    )}
 
                     {aiError && <p className="message-error" style={{ marginTop: '14px' }}>{aiError}</p>}
 
