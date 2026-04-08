@@ -54,53 +54,66 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="container">
-      <motion.form
-        className="card auth-card"
-        onSubmit={handleLogin}
-        initial={{ opacity: 0, y: 28 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.65 }}
-      >
-        <div className="logo-wrap">
-          <motion.img
-            src="/logo.png"
-            alt="Wingman Logo"
-            className="logo-img"
-            animate={{ y: [0, -5, 0] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-          />
-        </div>
+    <div className="page-shell">
+      <div className="bg-orb one" />
+      <div className="bg-orb two" />
+      <div className="container">
+        <motion.form
+          className="glass-card auth-card"
+          onSubmit={handleLogin}
+          initial={{ opacity: 0, y: 36, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.65 }}
+        >
+          <div className="logo-wrap">
+            <motion.img
+              src="/logo.png"
+              alt="Wingman Logo"
+              className="logo-img"
+              animate={{ y: [0, -7, 0] }}
+              transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          </div>
 
-        <h1 className="title">Welcome Back</h1>
-        <p className="subtitle">Login to continue to your dashboard.</p>
+          <h1 className="title">Welcome Back</h1>
+          <p className="subtitle">
+            Log in to access your smart airport dashboard and AI assistant.
+          </p>
 
-        <input
-          className="input"
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+          <div className="form-stack">
+            <input
+              className="input"
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
 
-        <input
-          className="input"
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+            <input
+              className="input"
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
 
-        {error && <p className="message-error">{error}</p>}
+          {error && <p className="message-error" style={{ marginTop: '14px' }}>{error}</p>}
 
-        <button className="button" type="submit" disabled={loading}>
-          {loading ? 'Logging in...' : 'Login'}
-        </button>
+          <button
+            className="btn btn-primary"
+            style={{ width: '100%', marginTop: '16px' }}
+            type="submit"
+            disabled={loading}
+          >
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
 
-        <p className="link-row">
-          Don&apos;t have an account? <Link href="/signup">Sign Up</Link>
-        </p>
-      </motion.form>
+          <p className="link-row">
+            Don&apos;t have an account? <Link href="/signup">Sign Up</Link>
+          </p>
+        </motion.form>
+      </div>
     </div>
   );
 }

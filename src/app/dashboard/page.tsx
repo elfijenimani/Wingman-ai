@@ -158,108 +158,132 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div className="container">
-        <motion.div
-          className="card"
-          initial={{ opacity: 0, y: 28 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7 }}
-        >
-          <div className="logo-wrap">
-            <motion.img
-              src="/logo.png"
-              alt="Wingman Logo"
-              className="logo-img"
-              animate={{ y: [0, -6, 0], rotate: [0, 1.2, -1.2, 0] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            />
-          </div>
+      <div className="page-shell">
+        <div className="bg-orb one" />
+        <div className="bg-orb two" />
+        <div className="bg-orb three" />
 
-          <h1 className="title">Dashboard</h1>
-          <p className="inline-user">Logged in as: {user?.email}</p>
-
-          <form className="stack-sm" onSubmit={handleAddNote}>
-            <input
-              className="input"
-              type="text"
-              placeholder="Note title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-
-            <textarea
-              className="textarea"
-              placeholder="Note content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-            />
-
-            {noteError && <p className="message-error">{noteError}</p>}
-            {noteSuccess && <p className="message-success">{noteSuccess}</p>}
-
-            <button className="button" type="submit" disabled={noteLoading}>
-              {noteLoading ? 'Adding...' : 'Add Note'}
-            </button>
-          </form>
-
-          <div className="notes-grid">
-            {loadingNotes ? (
-              <p className="subtitle">Loading notes...</p>
-            ) : notes.length === 0 ? (
-              <p className="subtitle">No notes yet for this user.</p>
-            ) : (
-              notes.map((note, index) => (
-                <motion.div
-                  className="note-card"
-                  key={note.id}
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.35, delay: index * 0.05 }}
-                >
-                  <h3 className="note-title">{note.title}</h3>
-                  <p className="note-text">{note.content}</p>
-                </motion.div>
-              ))
-            )}
-          </div>
-
-          <h2 className="section-title">Ask AI</h2>
-
-          <form className="stack-sm" onSubmit={handleAskAI}>
-            <textarea
-              className="textarea"
-              placeholder="Ask something about travel, airport, baggage, documents..."
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-            />
-
-            <button className="button" type="submit" disabled={aiLoading}>
-              {aiLoading ? 'Thinking...' : 'Ask AI'}
-            </button>
-          </form>
-
-          {aiError && <p className="message-error" style={{ marginTop: '12px' }}>{aiError}</p>}
-
-          {answer && (
-            <motion.div
-              className="answer-card"
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-            >
-              <h3 className="answer-title">AI Answer</h3>
-              <p className="answer-text">{answer}</p>
-            </motion.div>
-          )}
-
-          <button
-            className="button button-red"
-            style={{ marginTop: '24px' }}
-            onClick={handleLogout}
+        <div className="container">
+          <motion.div
+            className="glass-card dashboard-card"
+            initial={{ opacity: 0, y: 30, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.65 }}
           >
-            Logout
-          </button>
-        </motion.div>
+            <div className="dashboard-top">
+              <div>
+                <div className="logo-wrap" style={{ justifyContent: 'flex-start', marginBottom: '8px' }}>
+                  <motion.img
+                    src="/logo.png"
+                    alt="Wingman Logo"
+                    className="logo-img"
+                    style={{ width: '120px' }}
+                    animate={{ y: [0, -6, 0], rotate: [0, 1.2, -1.2, 0] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+                </div>
+                <h1 className="title" style={{ fontSize: '2rem', marginBottom: '8px' }}>
+                  Dashboard
+                </h1>
+                <p className="dashboard-user">Logged in as: {user?.email}</p>
+              </div>
+
+              <button className="btn btn-danger" onClick={handleLogout}>
+                Logout
+              </button>
+            </div>
+
+            <div className="grid-two">
+              <div className="panel">
+                <h2 className="panel-title">My Notes</h2>
+
+                <form className="form-stack" onSubmit={handleAddNote}>
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder="Note title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                  />
+
+                  <textarea
+                    className="textarea"
+                    placeholder="Write a note..."
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                  />
+
+                  {noteError && <p className="message-error">{noteError}</p>}
+                  {noteSuccess && <p className="message-success">{noteSuccess}</p>}
+
+                  <button className="btn btn-primary" type="submit" disabled={noteLoading}>
+                    {noteLoading ? 'Adding...' : 'Add Note'}
+                  </button>
+                </form>
+
+                <div className="notes-list">
+                  {loadingNotes ? (
+                    <p className="empty-text">Loading notes...</p>
+                  ) : notes.length === 0 ? (
+                    <p className="empty-text">No notes yet for this user.</p>
+                  ) : (
+                    notes.map((note, index) => (
+                      <motion.div
+                        className="note-card"
+                        key={note.id}
+                        initial={{ opacity: 0, y: 14 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35, delay: index * 0.05 }}
+                      >
+                        <h3 className="note-title">{note.title}</h3>
+                        <p className="note-text">{note.content}</p>
+                      </motion.div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="panel">
+                <h2 className="panel-title">Ask AI</h2>
+
+                <form className="form-stack" onSubmit={handleAskAI}>
+                  <textarea
+                    className="textarea"
+                    placeholder="Ask something about airport rules, baggage, documents, or travel preparation..."
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                  />
+
+                  <button className="btn btn-primary" type="submit" disabled={aiLoading}>
+                    {aiLoading ? 'Thinking...' : 'Ask AI'}
+                  </button>
+                </form>
+
+                {aiError && <p className="message-error" style={{ marginTop: '14px' }}>{aiError}</p>}
+
+                {answer ? (
+                  <motion.div
+                    className="answer-box"
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35 }}
+                  >
+                    <h3 className="answer-title">AI Answer</h3>
+                    <p className="answer-text">{answer}</p>
+                  </motion.div>
+                ) : (
+                  <div className="answer-box" style={{ marginTop: '14px' }}>
+                    <h3 className="answer-title">Assistant Ready</h3>
+                    <p className="empty-text">
+                      Ask a question and Wingman AI will help you with travel tips,
+                      airport preparation, baggage, and smart flight guidance.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        </div>
       </div>
     </ProtectedRoute>
   );
