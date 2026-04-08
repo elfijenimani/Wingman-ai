@@ -4,6 +4,7 @@ import { useState, FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -54,7 +55,23 @@ export default function LoginPage() {
 
   return (
     <div className="container">
-      <form className="card" onSubmit={handleLogin}>
+      <motion.form
+        className="card auth-card"
+        onSubmit={handleLogin}
+        initial={{ opacity: 0, y: 28 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.65 }}
+      >
+        <div className="logo-wrap">
+          <motion.img
+            src="/logo.png"
+            alt="Wingman Logo"
+            className="logo-img"
+            animate={{ y: [0, -5, 0] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+          />
+        </div>
+
         <h1 className="title">Welcome Back</h1>
         <p className="subtitle">Login to continue to your dashboard.</p>
 
@@ -74,16 +91,16 @@ export default function LoginPage() {
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        {error && <p className="error">{error}</p>}
+        {error && <p className="message-error">{error}</p>}
 
         <button className="button" type="submit" disabled={loading}>
           {loading ? 'Logging in...' : 'Login'}
         </button>
 
-        <p className="link">
+        <p className="link-row">
           Don&apos;t have an account? <Link href="/signup">Sign Up</Link>
         </p>
-      </form>
+      </motion.form>
     </div>
   );
 }

@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import ProtectedRoute from '../components/ProtectedRoute';
-import AddNote from '../components/AddNote';
-import NotesList from '../components/NotesList';
+import { motion } from 'framer-motion';
 
 type Note = {
   id: string;
@@ -21,6 +20,12 @@ export default function DashboardPage() {
 
   const [notes, setNotes] = useState<Note[]>([]);
   const [loadingNotes, setLoadingNotes] = useState(true);
+
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [noteLoading, setNoteLoading] = useState(false);
+  const [noteError, setNoteError] = useState('');
+  const [noteSuccess, setNoteSuccess] = useState('');
 
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
@@ -58,9 +63,56 @@ export default function DashboardPage() {
     fetchNotes();
   }, []);
 
-  async function handleLogout() {
-    await supabase.auth.signOut();
-    router.push('/login');
+  async function handleAddNote(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setNoteError('');
+    setNoteSuccess('');
+
+    if (!title.trim()) {
+      setNoteError('Title is required.');
+      return;
+    }
+
+    if (!content.trim()) {
+      setNoteError('Content is required.');
+      return;
+    }
+
+    try {
+      setNoteLoading(true);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setNoteError('Your session has expired. Please log in again.');
+        router.push('/login');
+        return;
+      }
+
+      const { error } = await supabase.from('notes').insert([
+        {
+          title: title.trim(),
+          content: content.trim(),
+          user_id: user.id,
+        },
+      ]);
+
+      if (error) {
+        setNoteError(error.message || 'Failed to add note.');
+        return;
+      }
+
+      setTitle('');
+      setContent('');
+      setNoteSuccess('Note added successfully.');
+      fetchNotes();
+    } catch {
+      setNoteError('Something went wrong. Please try again.');
+    } finally {
+      setNoteLoading(false);
+    }
   }
 
   async function handleAskAI(e: React.FormEvent<HTMLFormElement>) {
@@ -87,86 +139,127 @@ export default function DashboardPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setAiError(data.error || 'Something went wrong. Please try again.');
+        setAiError(data.error || 'Something went wrong with AI. Try again.');
         return;
       }
 
       setAnswer(data.answer || 'No response from AI.');
-    } catch (error) {
+    } catch {
       setAiError('Failed to fetch AI response.');
     } finally {
       setAiLoading(false);
     }
   }
 
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push('/login');
+  }
+
   return (
     <ProtectedRoute>
       <div className="container">
-        <div className="card" style={{ maxWidth: '700px' }}>
+        <motion.div
+          className="card"
+          initial={{ opacity: 0, y: 28 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+        >
+          <div className="logo-wrap">
+            <motion.img
+              src="/logo.png"
+              alt="Wingman Logo"
+              className="logo-img"
+              animate={{ y: [0, -6, 0], rotate: [0, 1.2, -1.2, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          </div>
+
           <h1 className="title">Dashboard</h1>
-          <p className="subtitle">Logged in as: {user?.email}</p>
+          <p className="inline-user">Logged in as: {user?.email}</p>
 
-          <AddNote onNoteAdded={fetchNotes} />
+          <form className="stack-sm" onSubmit={handleAddNote}>
+            <input
+              className="input"
+              type="text"
+              placeholder="Note title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
 
-          {loadingNotes ? (
-            <p style={{ marginTop: '20px' }}>Loading notes...</p>
-          ) : (
-            <NotesList notes={notes} />
-          )}
+            <textarea
+              className="textarea"
+              placeholder="Note content"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+            />
 
-          <div style={{ marginTop: '30px' }}>
-            <h2
-              style={{
-                fontSize: '24px',
-                fontWeight: 'bold',
-                marginBottom: '10px',
-              }}
-            >
-              Ask AI
-            </h2>
+            {noteError && <p className="message-error">{noteError}</p>}
+            {noteSuccess && <p className="message-success">{noteSuccess}</p>}
 
-            <form onSubmit={handleAskAI}>
-              <textarea
-                className="input"
-                placeholder="Ask something about travel, airport, baggage, documents..."
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                style={{ minHeight: '120px', resize: 'vertical' }}
-              />
+            <button className="button" type="submit" disabled={noteLoading}>
+              {noteLoading ? 'Adding...' : 'Add Note'}
+            </button>
+          </form>
 
-              <button className="button" type="submit" disabled={aiLoading}>
-                {aiLoading ? 'Thinking...' : 'Ask AI'}
-              </button>
-            </form>
-
-            {aiError && (
-              <p style={{ color: 'red', marginTop: '12px' }}>{aiError}</p>
-            )}
-
-            {answer && (
-              <div
-                style={{
-                  marginTop: '16px',
-                  background: '#f8f8f8',
-                  padding: '16px',
-                  borderRadius: '12px',
-                  textAlign: 'left',
-                }}
-              >
-                <h3 style={{ marginBottom: '8px' }}>AI Answer</h3>
-                <p style={{ color: '#444', lineHeight: '1.6' }}>{answer}</p>
-              </div>
+          <div className="notes-grid">
+            {loadingNotes ? (
+              <p className="subtitle">Loading notes...</p>
+            ) : notes.length === 0 ? (
+              <p className="subtitle">No notes yet for this user.</p>
+            ) : (
+              notes.map((note, index) => (
+                <motion.div
+                  className="note-card"
+                  key={note.id}
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, delay: index * 0.05 }}
+                >
+                  <h3 className="note-title">{note.title}</h3>
+                  <p className="note-text">{note.content}</p>
+                </motion.div>
+              ))
             )}
           </div>
 
+          <h2 className="section-title">Ask AI</h2>
+
+          <form className="stack-sm" onSubmit={handleAskAI}>
+            <textarea
+              className="textarea"
+              placeholder="Ask something about travel, airport, baggage, documents..."
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+            />
+
+            <button className="button" type="submit" disabled={aiLoading}>
+              {aiLoading ? 'Thinking...' : 'Ask AI'}
+            </button>
+          </form>
+
+          {aiError && <p className="message-error" style={{ marginTop: '12px' }}>{aiError}</p>}
+
+          {answer && (
+            <motion.div
+              className="answer-card"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <h3 className="answer-title">AI Answer</h3>
+              <p className="answer-text">{answer}</p>
+            </motion.div>
+          )}
+
           <button
-            className="button"
-            style={{ background: '#dc2626', marginTop: '24px' }}
+            className="button button-red"
+            style={{ marginTop: '24px' }}
             onClick={handleLogout}
           >
             Logout
           </button>
-        </div>
+        </motion.div>
       </div>
     </ProtectedRoute>
   );

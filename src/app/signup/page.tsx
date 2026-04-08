@@ -4,6 +4,7 @@ import { useState, FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -58,9 +59,10 @@ export default function SignupPage() {
       }
 
       setSuccess('Account created successfully. Redirecting to login...');
+
       setTimeout(() => {
         router.push('/login');
-      }, 1500);
+      }, 1400);
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {
@@ -70,9 +72,25 @@ export default function SignupPage() {
 
   return (
     <div className="container">
-      <form className="card" onSubmit={handleSignup}>
+      <motion.form
+        className="card auth-card"
+        onSubmit={handleSignup}
+        initial={{ opacity: 0, y: 28 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.65 }}
+      >
+        <div className="logo-wrap">
+          <motion.img
+            src="/logo.png"
+            alt="Wingman Logo"
+            className="logo-img"
+            animate={{ y: [0, -5, 0] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+          />
+        </div>
+
         <h1 className="title">Create Account</h1>
-        <p className="subtitle">Sign up to access your Wingman dashboard.</p>
+        <p className="subtitle">Sign up to access your dashboard.</p>
 
         <input
           className="input"
@@ -98,17 +116,17 @@ export default function SignupPage() {
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        {error && <p className="error">{error}</p>}
-        {success && <p style={{ color: 'green', marginBottom: '10px' }}>{success}</p>}
+        {error && <p className="message-error">{error}</p>}
+        {success && <p className="message-success">{success}</p>}
 
-        <button className="button" type="submit" disabled={loading}>
+        <button className="button button-green" type="submit" disabled={loading}>
           {loading ? 'Creating account...' : 'Sign Up'}
         </button>
 
-        <p className="link">
+        <p className="link-row">
           Already have an account? <Link href="/login">Login</Link>
         </p>
-      </form>
+      </motion.form>
     </div>
   );
 }

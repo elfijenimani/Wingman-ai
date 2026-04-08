@@ -13,6 +13,7 @@
     "@ai-sdk/openai": "^3.0.41",
     "@supabase/supabase-js": "^2.99.2",
     "ai": "^6.0.116",
+    "framer-motion": "^12.38.0",
     "next": "16.1.7",
     "react": "19.2.3",
     "react-dom": "19.2.3"
